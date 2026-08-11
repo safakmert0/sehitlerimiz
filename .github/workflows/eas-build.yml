@@ -1,23 +1,7 @@
-name: 📦 EAS Build + Release (APK / IPA)
+name: 📱 Android Build + Release (APK)
 
 on:
   workflow_dispatch:
-    inputs:
-      platform:
-        description: 'Hangi platform derlensin?'
-        type: choice
-        options:
-          - all
-          - android
-          - ios
-        default: all
-      profile:
-        description: 'Hangi build profili?'
-        type: choice
-        options:
-          - preview
-          - production
-        default: preview
   push:
     tags:
       - 'v*'
@@ -35,58 +19,46 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: ☕ Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: 📦 Bağımlılıklar
         run: npm ci --legacy-peer-deps
 
-      - name: 🔑 Expo (EAS) girişi
-        uses: expo/expo-github-action@v8
+      - name: 🔌 Supabase ortam değişkenleri (secret varsa)
+        run: |
+          if [ -n "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" ]; then
+            echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" >> .env
+            echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
+          fi
+
+      - name: 🧱 Android projesini oluştur (prebuild)
+        run: npx expo prebuild --platform android --no-install
+
+      - name: 📲 APK derle (release)
+        working-directory: android
+        run: ./gradlew :app:assembleRelease --no-daemon
+
+      - name: 📦 APK'yı paketle
+        run: |
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/release/app-release.apk artifacts/sehitlerimiz-${{ github.ref_name || 'manual' }}.apk 2>/dev/null \
+            || cp android/app/build/outputs/apk/release/app-release-unsigned.apk artifacts/sehitlerimiz-${{ github.ref_name || 'manual' }}.apk
+
+      - name: 📤 Artefakt olarak yükle
+        uses: actions/upload-artifact@v4
         with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: 🚀 Supabase ortam değişkenleri
-        run: |
-          echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" >> .env
-          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
-
-      - name: 🧱 Proje bağlantısı (ilk sefer)
-        run: npx eas-cli init --non-interactive
-        continue-on-error: true
-
-      - name: 📲 EAS Build
-        run: npx eas-cli build --non-interactive --platform "${{ github.event.inputs.platform || 'all' }}" --profile "${{ github.event.inputs.profile || 'preview' }}"
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-          # iOS için Apple hesabı (opsiyonel ama gerekli):
-          # EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
-          # EXPO_APPLE_PASSWORD: ${{ secrets.EXPO_APPLE_PASSWORD }}
-
-      - name: 📥 APK indir
-        if: ${{ github.event.inputs.platform != 'ios' || github.ref_type == 'tag' }}
-        run: |
-          mkdir -p artifacts
-          ANDROID_ID=$(npx eas-cli build:list --platform android --limit 1 --non-interactive --json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(d[0]?.id)")
-          if [ -n "$ANDROID_ID" ]; then npx eas-cli build:download --id "$ANDROID_ID" --output artifacts/app-android.zip --non-interactive || true; fi
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: 📥 IPA indir
-        if: ${{ github.event.inputs.platform != 'android' || github.ref_type == 'tag' }}
-        run: |
-          mkdir -p artifacts
-          IOS_ID=$(npx eas-cli build:list --platform ios --limit 1 --non-interactive --json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(d[0]?.id)")
-          if [ -n "$IOS_ID" ]; then npx eas-cli build:download --id "$IOS_ID" --output artifacts/app-ios.zip --non-interactive || true; fi
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          name: apk
+          path: artifacts/*.apk
 
       - name: 🏷️ Release'e yükle (tag varsa)
         if: github.ref_type == 'tag'
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           gh release create "$TAG" --title "Şehitlerimiz $TAG" --generate-notes || true
-          if [ -f artifacts/app-android.zip ]; then gh release upload "$TAG" artifacts/app-android.zip --clobber || true; fi
-          if [ -f artifacts/app-ios.zip ]; then gh release upload "$TAG" artifacts/app-ios.zip --clobber || true; fi
+          gh release upload "$TAG" artifacts/*.apk --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
