@@ -63,6 +63,22 @@ const PHOTOS = {
     'https://upload.wikimedia.org/wikipedia/commons/9/92/Rauf_Raif_Denkta%C5%9F.jpg',
   fazilKucuk:
     'https://upload.wikimedia.org/wikipedia/commons/d/de/Image_of_Faz%C4%B1l_K%C3%BC%C3%A7%C3%BCk_in_1963.png',
+  halisdemir:
+    'https://upload.wikimedia.org/wikipedia/tr/9/9b/%C3%96mer_Halisdemir.png',
+  cengizTopel:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Cengiz_Topel.JPG/500px-Cengiz_Topel.JPG',
+  sutcuImam:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Imamsutcu1.jpg/500px-Imamsutcu1.jpg',
+  serifeBaci:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Inebolu_%C5%9Eerife_Bac%C4%B1_monument_2233.jpg/500px-Inebolu_%C5%9Eerife_Bac%C4%B1_monument_2233.jpg',
+  fethiSekin:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Statue_of_Fethi_Sekin%2C_2024.jpg/500px-Statue_of_Fethi_Sekin%2C_2024.jpg',
+  yahyaCavus:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Yahya_%C3%87avu%C5%9F_-_panoramio.jpg/500px-Yahya_%C3%87avu%C5%9F_-_panoramio.jpg',
+  karaoglanoglu:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Tomb_of_Halil_%C4%B0brahim_Karao%C4%9Flano%C4%9Flu.jpg/500px-Tomb_of_Halil_%C4%B0brahim_Karao%C4%9Flano%C4%9Flu.jpg',
+  neneHatun:
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Nene_Hatun_Heykeli_%28Erzurum_Tabyalar%29.jpg/400px-Nene_Hatun_Heykeli_%28Erzurum_Tabyalar%29.jpg',
 } as const;
 
 function hero(
@@ -151,7 +167,7 @@ export const demoHeroes: Hero[] = [
       '25 Nisan 1915\'te Seddülbahir\'de 10 kişilik mangasıyla bir taburluk Anzak çıkarmasını saatlerce durduran kahraman çavuş.',
     story:
       '25 Nisan 1915 sabahı Seddülbahir kalesinde 10 kişilik ekibiyle düşman çıkarmasına karşı koydu. Ertesi gün şehit olduğunda vücudunda 14 kurşun yarası vardı; fakat o bir gün boyunca Anzak çıkarmasını tek başına durdurmuştu.',
-    profile_photo_url: null,
+    profile_photo_url: PHOTOS.yahyaCavus,
     grave_location: 'Seddülbahir Şehitliği, Çanakkale',
     lat: 40.043,
     lng: 26.159,
@@ -393,7 +409,7 @@ export const demoHeroes: Hero[] = [
       'Kurtuluş Savaşı\'nda cephane taşırken dondurucu soğukta şehit olan kahraman Türk kadını.',
     story:
       'İnebolu\'dan cepheye cephane taşıyan kağnı kafilesinde kundağındaki bebeğiyle yola çıkan Şerife Bacı, yağmur ve kar altında cephaneyi ıslanmasın diye üstündeki örtüyle örttü. Sabaha karşı donmuş bedeni ve yanında bebeği bulundu; cephane sağlam olarak cepheye ulaşmıştı.',
-    profile_photo_url: null,
+    profile_photo_url: PHOTOS.serifeBaci,
     grave_location: 'Kastamonu Şehitliği',
     lat: 41.376,
     lng: 33.778,
@@ -627,7 +643,7 @@ export const demoHeroes: Hero[] = [
       '31 Ekim 1919\'da Fransız işgaline karşı ilk kurşunu atarak Maraş direnişini başlatan kahraman.',
     story:
       'Fransız işgal kuvvetlerinin Müslüman kadınlara saldırdığı olay üzerine 31 Ekim 1919\'da sütçülük yaptığı gün düşmana ilk kurşunu sıktı. Bu olay Maraş\'ın kurtuluş mücadelesinin fitilini ateşledi; Kurtuluş\'tan sonra onuruna "Sütçü İmam" denildi. 1922\'de vefat etti.',
-    profile_photo_url: null,
+    profile_photo_url: PHOTOS.sutcuImam,
     grave_location: 'Kahramanmaraş, Sütçü İmam Anıt Mezarı',
     lat: 37.585,
     lng: 36.937,
@@ -791,7 +807,7 @@ export const demoHeroes: Hero[] = [
       'Kıbrıs Barış Harekatı\'nda Girne\'de çıkarma birliklerine komuta eden, 21 Temmuz 1974\'te şehit olan kahraman albay.',
     story:
       '20 Temmuz 1974\'te Kıbrıs Barış Harekatı\'nın ilk günü Girne\'de deniz çıkarmasını yöneten birliklere komuta etti. Girne Boğazı\'ndaki çatışmalarda 21 Temmuz\'da şehit oldu; adı Girne\'deki 50. Piyade Alayı kışlasına verildi.',
-    profile_photo_url: null,
+    profile_photo_url: PHOTOS.karaoglanoglu,
     grave_location: 'Ankara, Cebeci Askeri Şehitliği',
     lat: 39.929,
     lng: 32.854,
@@ -817,7 +833,7 @@ export const demoHeroes: Hero[] = [
       '1964 Erenköy direnişine destek uçuşları yaparken uçağı düşürülen ve şehit edilen ilk Türk Hava Kuvvetleri pilotu.',
     story:
       '8 Ağustos 1964\'te Erenköy\'deki Kıbrıslı Türk direnişçilere destek için keşif uçuşu yaparken uçağı Rumlar tarafından vuruldu. Atıldığı esaret sırasında şehit edildi; Türk Hava Kuvvetleri\'nin ilk hava şehidi olarak tarihe geçti.',
-    profile_photo_url: null,
+    profile_photo_url: PHOTOS.cengizTopel,
     grave_location: 'İstanbul, Zincirlikuyu Askeri Şehitliği',
     lat: 41.074,
     lng: 29.012,
@@ -925,7 +941,7 @@ export const demoHeroes: Hero[] = [
       '15 Temmuz darbe girişiminde darbeci generali vurarak Özel Kuvvetler Komutanlığının ele geçirilmesini engelleyen, ardından şehit edilen kahraman asker.',
     story:
       '15 Temmuz 2016 gecesi darbeci general Semih Terzi\'nin komutanlığı ele geçirmeye çalıştığı sırada, milletinin emriyle hareket ederek Terzi\'yi etkisiz hale getirdi. Bu fedakarlığı Özel Kuvvetler Komutanlığının darbecilerin eline geçmesini engelledi. Hemen ardından şehit edildi. Kabri, şehadetinin yıldönümlerinde binlerce vatandaş tarafından ziyaret edilmektedir.',
-    profile_photo_url: null,
+    profile_photo_url: PHOTOS.halisdemir,
     grave_location: 'Niğde, Merkez Mezarlığı',
     lat: 37.969,
     lng: 34.678,
@@ -1137,7 +1153,7 @@ export const demoHeroes: Hero[] = [
       '5 Ocak 2017\'de İzmir Adliyesi önünde terör saldırısını, silah arkadaşı Musa Can ile birlikte kendi canını feda ederek engelleyen kahraman polis.',
     story:
       '5 Ocak 2017 sabahı İzmir Adliyesi önünde kendini patlatmak üzere olan teröristleri, yanında tek silah arkadaşı Musa Can ile birlikte karşıladı. Göğüs göğüse çatışmada teröristleri etkisiz hale getirdi ve olası yüzlerce canı kurtardı; çatışmada şehit oldu. Silah arkadaşı Komiser Musa Can da şehitler kervanına katıldı.',
-    profile_photo_url: null,
+    profile_photo_url: PHOTOS.fethiSekin,
     grave_location: 'Iğdır, Ağrıdağı Şehitliği',
     lat: 39.888,
     lng: 44.033,
@@ -1405,7 +1421,7 @@ export const demoHeroes: Hero[] = [
       '93 Harbi\'nde kucağındaki bebeğini bırakıp eline balta alarak Aziziye Tabyası\'nın savunmasına katılan destanlaşan Türk kadını.',
     story:
       '1877-1878 Osmanlı-Rus Savaşı (93 Harbi) sırasında Erzurum Aziziye Tabyası\'nın Rusların eline geçtiğini duyunca bebeğini evde bırakıp eline balta alarak halkın önünde tabyaya koştu. Savunmada büyük kahramanlık gösterdi; 1955\'te "Yılın Annesi" seçildi.',
-    profile_photo_url: null,
+    profile_photo_url: PHOTOS.neneHatun,
     grave_location: 'Aziziye Tabyası, Erzurum',
     lat: 39.912,
     lng: 41.254,

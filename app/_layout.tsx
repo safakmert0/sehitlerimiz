@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from '../lib/auth';
@@ -21,21 +21,17 @@ export default function RootLayout() {
   useEffect(() => {
     initCache().catch(console.warn);
     const unsubscribe = subscribeOnboardingDone(setOnboardingDoneState);
-    AsyncStorage.getItem(ONBOARDING_DONE_KEY)
-      .then((v) => {
-        if (v === '1') setOnboardingDone(true);
-      })
-      .catch(() => setOnboardingDone(true))
-      .finally(() => setReady(true));
+    if (!navigatedRef.current) {
+      navigatedRef.current = true;
+      AsyncStorage.getItem(ONBOARDING_DONE_KEY)
+        .then((v) => {
+          if (v === '1') setOnboardingDone(true);
+        })
+        .catch(() => setOnboardingDone(true))
+        .finally(() => setReady(true));
+    }
     return unsubscribe;
   }, []);
-
-  useEffect(() => {
-    if (ready && onboardingDone && !navigatedRef.current) {
-      navigatedRef.current = true;
-      router.replace('/(tabs)');
-    }
-  }, [ready, onboardingDone]);
 
   if (!ready) {
     return <View style={{ flex: 1, backgroundColor: THEME.colors.background }} />;
@@ -59,9 +55,9 @@ export default function RootLayout() {
           <Stack.Screen name="hero/[id]" options={{ title: '' }} />
           <Stack.Screen name="admin/index" options={{ title: 'Moderasyon' }} />
         </Stack.Protected>
-        {!onboardingDone ? (
+        <Stack.Protected guard={!onboardingDone}>
           <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        ) : null}
+        </Stack.Protected>
       </Stack>
     </AuthProvider>
   );
