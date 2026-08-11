@@ -1,0 +1,61 @@
+name: 📦 EAS Build (iOS + Android)
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Hangi platform derlensin?'
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+        default: all
+      profile:
+        description: 'Hangi build profili?'
+        type: choice
+        options:
+          - preview
+          - production
+        default: preview
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗️ Kaynak kod
+        uses: actions/checkout@v4
+
+      - name: 🟢 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 📦 Bağımlılıklar
+        run: npm ci --legacy-peer-deps
+
+      - name: 🔑 Expo (EAS) girişi
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🚀 Supabase ortam değişkenleri
+        run: |
+          echo "EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" >> .env
+          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}" >> .env
+
+      - name: 🧱 Proje bağlantısı (ilk sefer)
+        run: npx eas-cli init --non-interactive
+        continue-on-error: true
+
+      - name: 📲 EAS Build
+        run: npx eas-cli build --non-interactive --platform "${{ github.event.inputs.platform || 'all' }}" --profile "${{ github.event.inputs.profile || 'preview' }}"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
