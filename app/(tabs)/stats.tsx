@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import { demoHeroes, isDemoMode } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 
 interface ConflictStat {
@@ -41,6 +42,43 @@ export default function StatsScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
+    if (isDemoMode()) {
+      const approved = demoHeroes.filter((h) => h.status === 'approved');
+      const perConflict = new Map<string, number>();
+      approved.forEach((h) => {
+        const key = h.conflict?.name ?? 'Diğer';
+        perConflict.set(key, (perConflict.get(key) ?? 0) + 1);
+      });
+      const perYear = new Map<number, number>();
+      approved
+        .filter((h) => h.is_martyr && h.death_date)
+        .forEach((h) => {
+          const y = new Date(h.death_date!).getFullYear();
+          perYear.set(y, (perYear.get(y) ?? 0) + 1);
+        });
+      const perCity = new Map<string, number>();
+      approved
+        .filter((h) => h.birth_place)
+        .forEach((h) => {
+          const c = h.birth_place!;
+          perCity.set(c, (perCity.get(c) ?? 0) + 1);
+        });
+      setStats({
+        total: approved.length,
+        martyrs: approved.filter((h) => h.is_martyr).length,
+        veterans: approved.filter((h) => h.is_veteran).length,
+        per_conflict: [...perConflict.entries()]
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count),
+        per_year: [...perYear.entries()].map(([year, count]) => ({ year, count })),
+        per_city: [...perCity.entries()]
+          .map(([city, count]) => ({ city, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10),
+        updated_at: new Date().toISOString(),
+      });
+      return;
+    }
     const { data, error } = await supabase.rpc('get_stats');
     if (error) {
       console.warn('İstatistik alınamadı:', error.message);

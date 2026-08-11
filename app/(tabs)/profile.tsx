@@ -12,6 +12,7 @@ import { Link, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
+import { isDemoMode } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import { STATUS_LABELS } from '../../lib/types';
 import type { Hero } from '../../lib/types';
@@ -108,6 +109,16 @@ export default function ProfileScreen() {
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#fff" />
               </Pressable>
+            )}
+
+            {isDemoMode() && (
+              <View style={styles.demoBanner}>
+                <Ionicons name="information-circle" size={18} color={THEME.colors.gold} />
+                <Text style={styles.demoBannerText}>
+                  Demo modu: örnek veriler görüntülenmektedir. Katkı ve anı özellikleri için
+                  uygulama veritabanına bağlanın.
+                </Text>
+              </View>
             )}
 
             {!user ? (
@@ -232,4 +243,15 @@ const styles = StyleSheet.create({
   heroMeta: { fontSize: 12, color: THEME.colors.textMuted, marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   statusText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  demoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    backgroundColor: '#FFF8E7',
+    borderWidth: 1,
+    borderColor: '#F0DDB0',
+    borderRadius: THEME.radius.md,
+    padding: THEME.spacing.md,
+  },
+  demoBannerText: { flex: 1, fontSize: 12, color: THEME.colors.text, lineHeight: 18 },
 });

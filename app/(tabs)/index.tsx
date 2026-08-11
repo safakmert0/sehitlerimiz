@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { cacheHeroes, getCachedHeroes } from '../../lib/cache';
+import { demoConflicts, demoHeroes, isDemoMode } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import { SITE_TAGLINE } from '../../lib/utils';
 import type { Conflict, Hero } from '../../lib/types';
@@ -35,6 +36,10 @@ export default function HomeScreen() {
   const pageRef = useRef(0);
 
   const loadConflicts = useCallback(async () => {
+    if (isDemoMode()) {
+      setConflicts(demoConflicts);
+      return;
+    }
     const { data, error } = await supabase
       .from('conflicts')
       .select('id, name, sort_order')
@@ -44,6 +49,25 @@ export default function HomeScreen() {
 
   const fetchPage = useCallback(
     async (page: number, replace: boolean) => {
+      if (isDemoMode()) {
+        let filtered = demoHeroes.filter((h) => h.status === 'approved');
+        if (typeFilter === 'martyr') filtered = filtered.filter((h) => h.is_martyr);
+        if (typeFilter === 'veteran') filtered = filtered.filter((h) => h.is_veteran);
+        if (conflictId) filtered = filtered.filter((h) => h.conflict_id === conflictId);
+        if (query.trim()) {
+          const q = query.trim().toLowerCase();
+          filtered = filtered.filter(
+            (h) =>
+              h.full_name.toLowerCase().includes(q) ||
+              (h.unit ?? '').toLowerCase().includes(q) ||
+              (h.birth_place ?? '').toLowerCase().includes(q)
+          );
+        }
+        const chunk = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+        setHeroes((prev) => (replace ? chunk : [...prev, ...chunk]));
+        setEndReached(chunk.length < PAGE_SIZE);
+        return chunk;
+      }
       let queryBuilder = supabase
         .from('heroes')
         .select(

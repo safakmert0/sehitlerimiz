@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
+import { isDemoMode } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import type { Conflict } from '../../lib/types';
 
@@ -109,6 +110,13 @@ export default function AddHeroScreen() {
   };
 
   const submit = async () => {
+    if (isDemoMode()) {
+      Alert.alert(
+        'Demo Modu',
+        'Bu sürüm örnek verilerle çalışmaktadır. Kayıt eklemek için uygulama veritabanına (Supabase) bağlanmalıdır.'
+      );
+      return;
+    }
     if (!user) {
       Alert.alert('Giriş Gerekli', 'Katkıda bulunmak için önce giriş yapmalısınız.');
       router.push('/auth/login');

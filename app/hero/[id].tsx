@@ -15,6 +15,7 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
+import { demoHeroes, isDemoMode } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import { ageAtDeath, formatDate, openMapUrl, publicMediaUrl } from '../../lib/utils';
 import type { Hero, HeroMedia, Tribute } from '../../lib/types';
@@ -35,6 +36,14 @@ export default function HeroDetailScreen() {
   const loadData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
+    if (isDemoMode()) {
+      const found = demoHeroes.find((h) => h.id === id) ?? null;
+      setHero(found);
+      setMedia([]);
+      setTributes([]);
+      setLoading(false);
+      return;
+    }
     try {
       const [{ data: heroData }, { data: mediaData }, { data: tributesData }] = await Promise.all([
         supabase
@@ -271,14 +280,20 @@ export default function HeroDetailScreen() {
                   multiline
                   value={tributeText}
                   onChangeText={setTributeText}
+                  editable={!isDemoMode()}
                 />
                 <Pressable
                   style={[styles.primaryButton, sendingTribute && { opacity: 0.6 }]}
                   onPress={sendTribute}
-                  disabled={sendingTribute}
+                  disabled={sendingTribute || isDemoMode()}
                 >
                   <Text style={styles.primaryButtonText}>Gönder</Text>
                 </Pressable>
+                {isDemoMode() && (
+                  <Text style={styles.demoNote}>
+                    Demo modu: anı bırakmak için uygulama veritabanına bağlanmalıdır.
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -412,4 +427,5 @@ const styles = StyleSheet.create({
   },
   actionText: { color: THEME.colors.primary, fontWeight: '600', fontSize: 14 },
   actionDangerText: { color: THEME.colors.danger, fontWeight: '600', fontSize: 14 },
+  demoNote: { fontSize: 12, color: THEME.colors.textMuted, textAlign: 'center' },
 });

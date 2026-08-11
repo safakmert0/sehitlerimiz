@@ -44,3 +44,9 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+
+# keystore
+android/app/keystore/
+
+# yerel derleme çıktıları (Release'e yüklenir, repo'ya değil)
+artifacts/

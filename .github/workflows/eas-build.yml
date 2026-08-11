@@ -1,4 +1,4 @@
-name: 📦 EAS Build (iOS + Android)
+name: 📦 EAS Build + Release (APK / IPA)
 
 on:
   workflow_dispatch:
@@ -59,3 +59,34 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          # iOS için Apple hesabı (opsiyonel ama gerekli):
+          # EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
+          # EXPO_APPLE_PASSWORD: ${{ secrets.EXPO_APPLE_PASSWORD }}
+
+      - name: 📥 APK indir
+        if: ${{ github.event.inputs.platform != 'ios' || github.ref_type == 'tag' }}
+        run: |
+          mkdir -p artifacts
+          ANDROID_ID=$(npx eas-cli build:list --platform android --limit 1 --non-interactive --json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(d[0]?.id)")
+          if [ -n "$ANDROID_ID" ]; then npx eas-cli build:download --id "$ANDROID_ID" --output artifacts/app-android.zip --non-interactive || true; fi
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📥 IPA indir
+        if: ${{ github.event.inputs.platform != 'android' || github.ref_type == 'tag' }}
+        run: |
+          mkdir -p artifacts
+          IOS_ID=$(npx eas-cli build:list --platform ios --limit 1 --non-interactive --json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(d[0]?.id)")
+          if [ -n "$IOS_ID" ]; then npx eas-cli build:download --id "$IOS_ID" --output artifacts/app-ios.zip --non-interactive || true; fi
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🏷️ Release'e yükle (tag varsa)
+        if: github.ref_type == 'tag'
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release create "$TAG" --title "Şehitlerimiz $TAG" --generate-notes || true
+          if [ -f artifacts/app-android.zip ]; then gh release upload "$TAG" artifacts/app-android.zip --clobber || true; fi
+          if [ -f artifacts/app-ios.zip ]; then gh release upload "$TAG" artifacts/app-ios.zip --clobber || true; fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

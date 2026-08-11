@@ -179,11 +179,38 @@ Repo sayfasında **Actions → "EAS Build (iOS + Android)" → Run workflow** se
 
 ### 5. Versiyonlar
 
-`git tag v1.0.0` etiketi oluşturup push ederseniz derleme otomatik başlar:
+`git tag v1.0.0` etiketi oluşturup push ederseniz derleme otomatik başlar ve **APK + IPA otomatik olarak GitHub Release sayfasına yüklenir**:
 
 ```bash
-git tag v1.0.0 && git push origin v1.0.0
+git tag v1.0.1 && git push origin v1.0.1
 ```
+
+Derlenen dosyaları **https://github.com/safakmert0/sehitlerimiz/releases** sayfasında bulabilirsiniz.
+
+### 6. Hazır APK
+
+**v1.0.0 sürümü zaten derlendi ve Release'e yüklendi:** [APK'yi indirin](https://github.com/safakmert0/sehitlerimiz/releases/tag/v1.0.0) → telefona kopyalayın → kurun.
+
+> Telefonda "Bilinmeyen kaynaklardan yükleme" iznini açmanız gerekebilir.
+> Bu sürüm **demo verileriyle** çalışır (Supabase bağlantısı olmadan da tamamen kullanılabilir).
+
+### 7. İmza anahtarı (ÖNEMLİ)
+
+Uygulama `sehitlerimiz.keystore` ile imzalanmıştır. Google Play'e yüklenecek sürümler aynı imzayı taşımalıdır.
+Bu dosyayı **güvenli bir yere yedekleyin** (kaybolursa uygulama güncellenemez):
+
+- Yerel: `android/app/keystore/sehitlerimiz.keystore`
+- Parola: `sehitlerimiz2026` (üretim öncesi mutlaka değiştirin)
+
+> ⚠️ Alternatif: EAS Build kendi imzasını üretir; Play Store'a geçerken EAS imzasını kullanmak daha güvenlidir (Play App Signing ile anahtar kaybı riski ortadan kalkar).
+
+### 8. IPA (iOS) notu
+
+IPA yalnızca iki yolla üretilebilir:
+1. **EAS Build** (önerilen): `EXPO_TOKEN` + Apple Developer hesabı eklendikten sonra workflow ile otomatik üretilir ve Release'e yüklenir.
+2. **Mac + Xcode** ile yerel derleme (Linux üzerinde üretilemez).
+
+Apple Developer hesabı olmadan IPA üretimi teknik olarak imkansızdır (Apple imza zorunluluğu).
 
 ---
 
