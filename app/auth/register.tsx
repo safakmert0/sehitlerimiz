@@ -27,6 +27,11 @@ export default function RegisterScreen() {
     }
     setLoading(true);
     setError(null);
+    if (!supabase) {
+      setLoading(false);
+      setError('Veritabanı bağlantısı yok. Lütfen .env dosyasını kontrol edin.');
+      return;
+    }
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,

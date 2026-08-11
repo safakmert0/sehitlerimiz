@@ -1,14 +1,45 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
+import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from '../lib/auth';
 import { initCache } from '../lib/cache';
 import { THEME } from '../lib/theme';
+import {
+  isOnboardingDone,
+  setOnboardingDone,
+  subscribeOnboardingDone,
+} from '../lib/onboardingGate';
+import { ONBOARDING_DONE_KEY } from './onboarding';
 
 export default function RootLayout() {
+  const [ready, setReady] = useState(false);
+  const [onboardingDone, setOnboardingDoneState] = useState(isOnboardingDone());
+  const navigatedRef = useRef(false);
+
   useEffect(() => {
     initCache().catch(console.warn);
+    const unsubscribe = subscribeOnboardingDone(setOnboardingDoneState);
+    AsyncStorage.getItem(ONBOARDING_DONE_KEY)
+      .then((v) => {
+        if (v === '1') setOnboardingDone(true);
+      })
+      .catch(() => setOnboardingDone(true))
+      .finally(() => setReady(true));
+    return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (ready && onboardingDone && !navigatedRef.current) {
+      navigatedRef.current = true;
+      router.replace('/(tabs)');
+    }
+  }, [ready, onboardingDone]);
+
+  if (!ready) {
+    return <View style={{ flex: 1, backgroundColor: THEME.colors.background }} />;
+  }
 
   return (
     <AuthProvider>
@@ -21,11 +52,16 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: THEME.colors.background },
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth/login" options={{ title: 'Giriş Yap' }} />
-        <Stack.Screen name="auth/register" options={{ title: 'Kayıt Ol' }} />
-        <Stack.Screen name="hero/[id]" options={{ title: '' }} />
-        <Stack.Screen name="admin/index" options={{ title: 'Moderasyon' }} />
+        <Stack.Protected guard={onboardingDone}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="auth/login" options={{ title: 'Giriş Yap' }} />
+          <Stack.Screen name="auth/register" options={{ title: 'Kayıt Ol' }} />
+          <Stack.Screen name="hero/[id]" options={{ title: '' }} />
+          <Stack.Screen name="admin/index" options={{ title: 'Moderasyon' }} />
+        </Stack.Protected>
+        {!onboardingDone ? (
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        ) : null}
       </Stack>
     </AuthProvider>
   );

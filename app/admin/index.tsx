@@ -32,6 +32,10 @@ export default function AdminScreen() {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     const [h, m, r, t] = await Promise.all([
       supabase
         .from('heroes')
@@ -70,6 +74,7 @@ export default function AdminScreen() {
   }, [isAdmin, loadAll]);
 
   const approveHero = async (hero: Hero) => {
+    if (!supabase) return;
     const { error } = await supabase
       .from('heroes')
       .update({ status: 'approved', approved_at: new Date().toISOString() })
@@ -84,6 +89,7 @@ export default function AdminScreen() {
       Alert.alert('Gerekli', 'Red gerekçesi yazmalısınız.');
       return;
     }
+    if (!supabase) return;
     const { error } = await supabase
       .from('heroes')
       .update({ status: 'rejected', rejection_reason: reason })
@@ -94,12 +100,14 @@ export default function AdminScreen() {
   };
 
   const setMediaStatus = async (m: HeroMedia, status: 'approved' | 'rejected') => {
+    if (!supabase) return;
     const { error } = await supabase.from('hero_media').update({ status }).eq('id', m.id);
     if (error) return Alert.alert('Hata', error.message);
     setMedia((prev) => prev.filter((x) => x.id !== m.id));
   };
 
   const resolveReport = async (r: Report, status: 'resolved' | 'dismissed') => {
+    if (!supabase) return;
     const { error } = await supabase
       .from('reports')
       .update({ status, resolved_at: new Date().toISOString() })
@@ -109,6 +117,7 @@ export default function AdminScreen() {
   };
 
   const setTributeStatus = async (t: Tribute, status: 'approved' | 'rejected') => {
+    if (!supabase) return;
     const { error } = await supabase.from('tributes').update({ status }).eq('id', t.id);
     if (error) return Alert.alert('Hata', error.message);
     setTributes((prev) => prev.filter((x) => x.id !== t.id));

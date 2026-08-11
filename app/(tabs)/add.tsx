@@ -50,6 +50,7 @@ export default function AddHeroScreen() {
   const [picking, setPicking] = useState(false);
 
   useEffect(() => {
+    if (!supabase) return;
     (async () => {
       const { data } = await supabase
         .from('conflicts')
@@ -83,6 +84,7 @@ export default function AddHeroScreen() {
   }, []);
 
   const uploadMedia = async (heroId: string) => {
+    if (!supabase) return [];
     const uploaded: { type: string; url: string; caption: string | null }[] = [];
     for (const m of media) {
       const ext = m.type === 'video' ? 'mp4' : 'jpg';
@@ -132,6 +134,7 @@ export default function AddHeroScreen() {
     }
     setSubmitting(true);
     try {
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('heroes')
         .insert({

@@ -23,7 +23,7 @@ export default function ProfileScreen() {
   const [loadingHeroes, setLoadingHeroes] = useState(false);
 
   const loadMyHeroes = useCallback(async () => {
-    if (!user) {
+    if (!user || !supabase) {
       setMyHeroes([]);
       return;
     }
@@ -51,7 +51,8 @@ export default function ProfileScreen() {
         text: 'Çıkış Yap',
         style: 'destructive',
         onPress: async () => {
-          await supabase.auth.signOut();
+          if (supabase) await supabase.auth.signOut();
+          await refreshProfile();
         },
       },
     ]);
@@ -160,7 +161,7 @@ export default function ProfileScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.heroName}>{item.full_name}</Text>
               <Text style={styles.heroMeta}>
-                {item.is_martyr ? 'Şehit' : 'Gazi'} •{' '}
+                {item.is_martyr ? 'Şehit' : item.is_veteran ? 'Gazi' : 'Kahraman'} •{' '}
                 {new Date(item.created_at).toLocaleDateString('tr-TR')}
               </Text>
             </View>

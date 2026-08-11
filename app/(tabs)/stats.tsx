@@ -36,55 +36,67 @@ interface Stats {
   updated_at: string;
 }
 
+type Segment = 'total' | 'martyr' | 'veteran';
+
 export default function StatsScreen() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [allStats, setAllStats] = useState<Stats | null>(null);
+  const [martyrStats, setMartyrStats] = useState<Stats | null>(null);
+  const [veteranStats, setVeteranStats] = useState<Stats | null>(null);
+  const [segment, setSegment] = useState<Segment>('total');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const compute = (subset: typeof demoHeroes) => {
+    const perConflict = new Map<string, number>();
+    subset.forEach((h) => {
+      const key = h.conflict?.name ?? 'Diğer';
+      perConflict.set(key, (perConflict.get(key) ?? 0) + 1);
+    });
+    const perYear = new Map<number, number>();
+    subset
+      .filter((h) => h.is_martyr && h.death_date)
+      .forEach((h) => {
+        const y = new Date(h.death_date!).getFullYear();
+        perYear.set(y, (perYear.get(y) ?? 0) + 1);
+      });
+    const perCity = new Map<string, number>();
+    subset
+      .filter((h) => h.birth_place)
+      .forEach((h) => {
+        const c = h.birth_place!;
+        perCity.set(c, (perCity.get(c) ?? 0) + 1);
+      });
+    return {
+      total: subset.length,
+      martyrs: subset.filter((h) => h.is_martyr).length,
+      veterans: subset.filter((h) => h.is_veteran).length,
+      per_conflict: [...perConflict.entries()]
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count),
+      per_year: [...perYear.entries()].map(([year, count]) => ({ year, count })),
+      per_city: [...perCity.entries()]
+        .map(([city, count]) => ({ city, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10),
+      updated_at: new Date().toISOString(),
+    };
+  };
 
   const load = useCallback(async () => {
     if (isDemoMode()) {
       const approved = demoHeroes.filter((h) => h.status === 'approved');
-      const perConflict = new Map<string, number>();
-      approved.forEach((h) => {
-        const key = h.conflict?.name ?? 'Diğer';
-        perConflict.set(key, (perConflict.get(key) ?? 0) + 1);
-      });
-      const perYear = new Map<number, number>();
-      approved
-        .filter((h) => h.is_martyr && h.death_date)
-        .forEach((h) => {
-          const y = new Date(h.death_date!).getFullYear();
-          perYear.set(y, (perYear.get(y) ?? 0) + 1);
-        });
-      const perCity = new Map<string, number>();
-      approved
-        .filter((h) => h.birth_place)
-        .forEach((h) => {
-          const c = h.birth_place!;
-          perCity.set(c, (perCity.get(c) ?? 0) + 1);
-        });
-      setStats({
-        total: approved.length,
-        martyrs: approved.filter((h) => h.is_martyr).length,
-        veterans: approved.filter((h) => h.is_veteran).length,
-        per_conflict: [...perConflict.entries()]
-          .map(([name, count]) => ({ name, count }))
-          .sort((a, b) => b.count - a.count),
-        per_year: [...perYear.entries()].map(([year, count]) => ({ year, count })),
-        per_city: [...perCity.entries()]
-          .map(([city, count]) => ({ city, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 10),
-        updated_at: new Date().toISOString(),
-      });
+      setAllStats(compute(approved));
+      setMartyrStats(compute(approved.filter((h) => h.is_martyr)));
+      setVeteranStats(compute(approved.filter((h) => h.is_veteran)));
       return;
     }
+    if (!supabase) return;
     const { data, error } = await supabase.rpc('get_stats');
     if (error) {
       console.warn('İstatistik alınamadı:', error.message);
       return;
     }
-    setStats(data as Stats);
+    setAllStats(data as Stats);
   }, []);
 
   useEffect(() => {
@@ -97,6 +109,9 @@ export default function StatsScreen() {
     setRefreshing(false);
   };
 
+  const stats: Stats | null =
+    segment === 'total' ? allStats : segment === 'martyr' ? martyrStats : veteranStats;
+
   if (loading || !stats) {
     return (
       <View style={styles.center}>
@@ -107,7 +122,8 @@ export default function StatsScreen() {
 
   const maxConflict = Math.max(1, ...stats.per_conflict.map((c) => c.count));
   const maxYear = Math.max(1, ...stats.per_year.map((y) => y.count));
-  const total = stats.total || 0;
+  const total = allStats?.total || 0;
+  const canSegment = isDemoMode();
 
   return (
     <ScrollView
@@ -122,10 +138,53 @@ export default function StatsScreen() {
         <Text style={styles.headerSub}>Kayıtlı kahramanlarımızın güncel sayıları</Text>
       </LinearGradient>
 
+      {canSegment ? (
+        <View style={styles.segmentRow}>
+          {(
+            [
+              ['total', 'Toplam'],
+              ['martyr', 'Şehit'],
+              ['veteran', 'Gazi'],
+            ] as [Segment, string][]
+          ).map(([key, label]) => (
+            <Pressable
+              key={key}
+              style={[styles.segmentItem, segment === key && styles.segmentItemActive]}
+              onPress={() => setSegment(key)}
+            >
+              <Text
+                style={[styles.segmentText, segment === key && styles.segmentTextActive]}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.bigCards}>
-        <BigCard label="Toplam" value={total} icon="people" />
-        <BigCard label="Şehit" value={stats.martyrs} icon="medal" highlight />
-        <BigCard label="Gazi" value={stats.veterans} icon="shield-checkmark" />
+        <BigCard
+          label="Toplam"
+          value={total}
+          icon="people"
+          active={segment === 'total'}
+          onPress={canSegment ? () => setSegment('total') : undefined}
+        />
+        <BigCard
+          label="Şehit"
+          value={stats.martyrs}
+          icon="medal"
+          highlight
+          active={segment === 'martyr'}
+          onPress={canSegment ? () => setSegment('martyr') : undefined}
+        />
+        <BigCard
+          label="Gazi"
+          value={stats.veterans}
+          icon="shield-checkmark"
+          active={segment === 'veteran'}
+          onPress={canSegment ? () => setSegment('veteran') : undefined}
+        />
       </View>
 
       <Text style={styles.sectionTitle}>Savaş / Operasyon Kategorileri</Text>
@@ -200,24 +259,39 @@ function BigCard({
   value,
   icon,
   highlight,
+  active,
+  onPress,
 }: {
   label: string;
   value: number;
   icon: keyof typeof Ionicons.glyphMap;
   highlight?: boolean;
+  active?: boolean;
+  onPress?: () => void;
 }) {
-  return (
-    <View style={[styles.bigCard, highlight && styles.bigCardHighlight]}>
+  const content = (
+    <>
       <Ionicons
         name={icon}
         size={22}
-        color={highlight ? THEME.colors.primary : THEME.colors.textMuted}
+        color={active || highlight ? THEME.colors.primary : THEME.colors.textMuted}
       />
-      <Text style={[styles.bigValue, highlight && styles.bigValueHighlight]}>
+      <Text style={[styles.bigValue, (active || highlight) && styles.bigValueHighlight]}>
         {value.toLocaleString('tr-TR')}
       </Text>
       <Text style={styles.bigLabel}>{label}</Text>
-    </View>
+    </>
+  );
+  if (!onPress) {
+    return <View style={[styles.bigCard, highlight && styles.bigCardHighlight]}>{content}</View>;
+  }
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.bigCard, (active || highlight) && styles.bigCardActive]}
+    >
+      {content}
+    </Pressable>
   );
 }
 
@@ -244,7 +318,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  bigCardActive: { borderColor: THEME.colors.primary, borderWidth: 2, backgroundColor: '#FBF3F4' },
   bigCardHighlight: { borderColor: THEME.colors.primary, borderWidth: 2 },
+  segmentRow: {
+    flexDirection: 'row',
+    gap: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.lg,
+    marginTop: THEME.spacing.lg,
+  },
+  segmentItem: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: THEME.radius.md,
+    backgroundColor: THEME.colors.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    alignItems: 'center',
+  },
+  segmentItemActive: { backgroundColor: THEME.colors.primary, borderColor: THEME.colors.primary },
+  segmentText: { fontSize: 14, fontWeight: '700', color: THEME.colors.textMuted },
+  segmentTextActive: { color: THEME.colors.white },
   bigValue: { fontSize: 24, fontWeight: '800', color: THEME.colors.text },
   bigValueHighlight: { color: THEME.colors.primary },
   bigLabel: { fontSize: 12, color: THEME.colors.textMuted },

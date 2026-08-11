@@ -26,6 +26,11 @@ export default function LoginScreen() {
     }
     setLoading(true);
     setError(null);
+    if (!supabase) {
+      setLoading(false);
+      setError('Veritabanı bağlantısı yok. Lütfen .env dosyasını kontrol edin.');
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,

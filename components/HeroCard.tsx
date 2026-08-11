@@ -28,11 +28,11 @@ export default function HeroCard({ hero }: { hero: Hero }) {
             <View style={styles.badgeMartyr}>
               <Text style={styles.badgeMartyrText}>Şehit</Text>
             </View>
-          ) : (
+          ) : hero.is_veteran ? (
             <View style={styles.badgeVeteran}>
               <Text style={styles.badgeVeteranText}>Gazi</Text>
             </View>
-          )}
+          ) : null}
         </View>
 
         {(hero.rank || hero.unit) && (
@@ -45,7 +45,7 @@ export default function HeroCard({ hero }: { hero: Hero }) {
           {hero.birth_date && (
             <Text style={styles.dates}>
               {formatDateShort(hero.birth_date)} -{' '}
-              {hero.is_martyr ? formatDateShort(hero.death_date) : 'Gazi'}
+              {hero.is_martyr ? formatDateShort(hero.death_date) : hero.is_veteran ? 'Gazi' : ''}
               {age !== null ? ` (${age} yaş)` : ''}
             </Text>
           )}

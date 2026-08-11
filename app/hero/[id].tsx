@@ -45,6 +45,10 @@ export default function HeroDetailScreen() {
       return;
     }
     try {
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
       const [{ data: heroData }, { data: mediaData }, { data: tributesData }] = await Promise.all([
         supabase
           .from('heroes')
@@ -99,7 +103,7 @@ export default function HeroDetailScreen() {
             {
               text: 'Gönder',
               onPress: async (desc: string | undefined) => {
-                if (!desc?.trim()) return;
+                if (!desc?.trim() || !supabase) return;
                 const { error } = await supabase.from('reports').insert({
                   hero_id: hero?.id,
                   report_type: 'diger',
@@ -120,7 +124,7 @@ export default function HeroDetailScreen() {
   };
 
   const sendTribute = async () => {
-    if (!user) {
+    if (!user || !supabase) {
       Alert.alert('Giriş Gerekli', 'Anı bırakmak için giriş yapmalısınız.');
       return;
     }
@@ -143,9 +147,8 @@ export default function HeroDetailScreen() {
 
   const shareHero = () => {
     if (!hero) return;
-    const text = `${hero.full_name} — ${hero.is_martyr ? 'Şehit' : 'Gazi'} ${
-      hero.conflict ? hero.conflict.name : ''
-    }`;
+    const role = hero.is_martyr ? 'Şehit' : hero.is_veteran ? 'Gazi' : 'Kahraman';
+    const text = `${hero.full_name} — ${role} ${hero.conflict ? hero.conflict.name : ''}`;
     Linking.openURL(
       `https://wa.me/?text=${encodeURIComponent(text + ' — Şehitlerimiz uygulamasında')}`
     ).catch(() => {});

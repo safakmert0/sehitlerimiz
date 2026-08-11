@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { cacheHeroes, getCachedHeroes } from '../../lib/cache';
-import { demoConflicts, demoHeroes, isDemoMode } from '../../lib/demo';
+import { demoConflicts, demoHeroes, isDemoMode, PINNED_HERO_IDS } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import { SITE_TAGLINE } from '../../lib/utils';
 import type { Conflict, Hero } from '../../lib/types';
@@ -40,6 +40,7 @@ export default function HomeScreen() {
       setConflicts(demoConflicts);
       return;
     }
+    if (!supabase) return;
     const { data, error } = await supabase
       .from('conflicts')
       .select('id, name, sort_order')
@@ -63,10 +64,23 @@ export default function HomeScreen() {
               (h.birth_place ?? '').toLowerCase().includes(q)
           );
         }
-        const chunk = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+        const pinnedFirst = [...filtered].sort((a, b) => {
+          const ia = PINNED_HERO_IDS.indexOf(a.id);
+          const ib = PINNED_HERO_IDS.indexOf(b.id);
+          if (ia === -1 && ib === -1) return 0;
+          if (ia === -1) return 1;
+          if (ib === -1) return -1;
+          return ia - ib;
+        });
+        const chunk = pinnedFirst.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
         setHeroes((prev) => (replace ? chunk : [...prev, ...chunk]));
         setEndReached(chunk.length < PAGE_SIZE);
         return chunk;
+      }
+      if (!supabase) {
+        setHeroes([]);
+        setEndReached(true);
+        return [];
       }
       let queryBuilder = supabase
         .from('heroes')
@@ -150,7 +164,7 @@ export default function HomeScreen() {
         colors={[THEME.colors.primary, THEME.colors.primaryDark]}
         style={styles.header}
       >
-        <Text style={styles.title}>Şehitlerimiz</Text>
+        <Text style={styles.title}>Şehitlerimiz ve Gazilerimiz</Text>
         <Text style={styles.tagline}>{SITE_TAGLINE}</Text>
       </LinearGradient>
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Şehitlerimiz",
+    "name": "Şehitlerimiz Gazilerimiz",
     "slug": "sehitlerimiz",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -40,7 +40,8 @@
         {
           "photosPermission": "Şehit ve gazilerimizin fotoğraf ve videolarını ekleyebilmeniz için galeri erişimi gereklidir."
         }
-      ]
+      ],
+      "expo-audio"
     ]
   }
 }
