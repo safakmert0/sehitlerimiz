@@ -128,6 +128,65 @@ scripts/               → import_heroes.mjs (toplu veri aktarımı)
 
 ---
 
+## 📊 İstatistik Ekranı
+
+Uygulamanın 2. sekmesinde kayıtlı kahramanların sayıları görüntülenir:
+
+- Toplam / Şehit / Gazi sayıları
+- Savaş ve operasyon kategorilerine göre dağılım
+- Şehadet yıllarına göre dağılım
+- Memleketlere göre ilk 10
+
+> Kurulum: SQL Editor'a `supabase/stats_function.sql` içeriğini yapıştırıp çalıştırın (yalnızca bir kez).
+
+---
+
+## 📦 Derleme (iOS + Android)
+
+Derlemeler **EAS Build** (Expo bulutu) + **GitHub Actions** ile yapılır; yerel bilgisayarda Android SDK / Xcode gerekmez.
+
+### 1. GitHub'a gönderilen repo
+
+Uygulama şu repoda: **https://github.com/safakmert0/sehitlerimiz**
+
+### 2. GitHub Secrets ekleyin
+
+Repo sayfasında **Settings → Secrets and variables → Actions** bölümüne ekleyin:
+
+| Secret adı | Nereden alınır |
+|---|---|
+| `EXPO_TOKEN` | [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens) (Expo hesabı gerekli, ücretsiz) |
+| `EXPO_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
+
+### 3. Derlemeyi başlatın
+
+Repo sayfasında **Actions → "EAS Build (iOS + Android)" → Run workflow** seçin:
+
+- `all` = hem iOS hem Android
+- Profil `preview` = APK (Android) + iç test (iOS) → doğrudan telefona kurulabilir
+- Profil `production` = Play Store (AAB) + App Store sürümü
+
+### 4. İlk sefere özel gereksinimler
+
+- **iOS**: Apple Developer hesabı gereklidir (yıllık $99). EAS ilk iOS derlemesinde sizden Apple kimliği ister:
+  ```
+  npx eas-cli credentials --platform ios
+  ```
+  (Windows/Mac herhangi bir makineden bir kez yapılır.)
+- **Android (Play Store)**: [Google Play Console](https://play.google.com/console) (tek seferlik $25). Mağazaya yüklemek için `production` profiliyle AAB derleyin.
+- **Test için**: `preview` profili APK üretir, GitHub'da indirme linki çıkar.
+
+### 5. Versiyonlar
+
+`git tag v1.0.0` etiketi oluşturup push ederseniz derleme otomatik başlar:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+---
+
 ## Güvenlik
 
 - Tüm veriler **Row Level Security** ile korunur (şema içinde tanımlı).
