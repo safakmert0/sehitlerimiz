@@ -13,7 +13,7 @@ import { SITE_TAGLINE } from '../lib/utils';
 export const ONBOARDING_DONE_KEY = 'onboarding_completed';
 
 export default function OnboardingScreen() {
-  const player = useVideoPlayer(require('../../assets/onboarding.mp4'), (p) => {
+  const player = useVideoPlayer(require('../assets/onboarding.mp4'), (p) => {
     p.loop = false;
     p.timeUpdateEventInterval = 0.1;
     p.muted = false;
