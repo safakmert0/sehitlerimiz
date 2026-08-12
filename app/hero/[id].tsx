@@ -18,6 +18,7 @@ import { useAuth } from '../../lib/auth';
 import { demoHeroes, isDemoMode } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import { ageAtDeath, formatDate, openMapUrl, publicMediaUrl } from '../../lib/utils';
+import { externalSearchLinks, fetchWikiInfo, type WikiResult } from '../../lib/wiki';
 import type { Hero, HeroMedia, Tribute } from '../../lib/types';
 import MediaGallery from '../../components/MediaGallery';
 import TributeItem from '../../components/TributeItem';
@@ -32,6 +33,9 @@ export default function HeroDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [tributeText, setTributeText] = useState('');
   const [sendingTribute, setSendingTribute] = useState(false);
+  const [wiki, setWiki] = useState<WikiResult | null>(null);
+  const [wikiLoading, setWikiLoading] = useState(false);
+  const [wikiError, setWikiError] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -86,8 +90,47 @@ export default function HeroDetailScreen() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (!hero) return;
+    let cancelled = false;
+    setWikiLoading(true);
+    setWikiError(false);
+    fetchWikiInfo(hero.full_name)
+      .then((r) => {
+        if (!cancelled) {
+          setWiki(r);
+          setWikiLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setWikiError(true);
+          setWikiLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hero]);
+
   const photos = useMemo(() => media.filter((m) => m.type === 'photo'), [media]);
   const videos = useMemo(() => media.filter((m) => m.type === 'video'), [media]);
+  const wikiPhotos = useMemo(
+    () =>
+      wiki?.thumbnail
+        ? ([
+            {
+              id: 'wiki-thumb',
+              type: 'photo' as const,
+              url: wiki.thumbnail,
+              caption: `${wiki.title} — Vikipedi`,
+              status: 'approved' as const,
+              created_at: '',
+            },
+          ] as HeroMedia[])
+        : [],
+    [wiki]
+  );
 
   const reportHero = () => {
     if (!user) {
@@ -167,7 +210,19 @@ export default function HeroDetailScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
           {photo ? (
-            <Image source={{ uri: photo }} style={styles.cover} contentFit="cover" />
+            <Image
+              source={{ uri: photo }}
+              style={styles.cover}
+              contentFit="cover"
+              contentPosition="top"
+            />
+          ) : wiki?.thumbnail ? (
+            <Image
+              source={{ uri: wiki.thumbnail }}
+              style={styles.cover}
+              contentFit="cover"
+              contentPosition="top"
+            />
           ) : (
             <View style={[styles.cover, styles.coverPlaceholder]}>
               <Ionicons name="medal" size={64} color={THEME.colors.gold} />
@@ -259,12 +314,57 @@ export default function HeroDetailScreen() {
               </View>
             )}
 
-            {photos.length > 0 && (
+            {(photos.length > 0 || wikiPhotos.length > 0) && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Fotoğraflar</Text>
-                <MediaGallery media={photos} />
+                <MediaGallery media={[...wikiPhotos, ...photos]} />
               </View>
             )}
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>İnternet Kaynakları</Text>
+              {wikiLoading ? (
+                <ActivityIndicator color={THEME.colors.primary} style={{ alignSelf: 'flex-start' }} />
+              ) : wiki ? (
+                <View style={styles.wikiCard}>
+                  <View style={styles.wikiHeader}>
+                    <Ionicons name="book" size={18} color={THEME.colors.primary} />
+                    <Text style={styles.wikiTitle}>Vikipedi — {wiki.title}</Text>
+                  </View>
+                  <Text style={styles.bodyText} numberOfLines={6}>
+                    {wiki.extract}
+                  </Text>
+                  <Pressable
+                    style={styles.linkRow}
+                    onPress={() => Linking.openURL(wiki.pageUrl).catch(() => {})}
+                  >
+                    <Ionicons name="open-outline" size={16} color={THEME.colors.primary} />
+                    <Text style={styles.linkRowText}>Vikipedi'de oku</Text>
+                  </Pressable>
+                </View>
+              ) : wikiError ? (
+                <Text style={styles.bodyText}>
+                  İnternet bağlantısı sırasında bir sorun oluştu. Tekrar deneyin.
+                </Text>
+              ) : (
+                <Text style={styles.bodyText}>
+                  Bu kişi için Vikipedi'de sayfa bulunamadı. Yine de internetten arayabilirsiniz.
+                </Text>
+              )}
+
+              <View style={styles.linkGrid}>
+                {externalSearchLinks(hero.full_name).map((l) => (
+                  <Pressable
+                    key={l.label}
+                    style={styles.linkGridItem}
+                    onPress={() => Linking.openURL(l.url).catch(() => {})}
+                  >
+                    <Ionicons name={l.icon} size={20} color={THEME.colors.primary} />
+                    <Text style={styles.linkGridText}>{l.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Anı Defteri</Text>
@@ -431,4 +531,29 @@ const styles = StyleSheet.create({
   actionText: { color: THEME.colors.primary, fontWeight: '600', fontSize: 14 },
   actionDangerText: { color: THEME.colors.danger, fontWeight: '600', fontSize: 14 },
   demoNote: { fontSize: 12, color: THEME.colors.textMuted, textAlign: 'center' },
+  wikiCard: {
+    backgroundColor: THEME.colors.card,
+    borderRadius: THEME.radius.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    padding: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+  },
+  wikiHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  wikiTitle: { fontSize: 15, fontWeight: '700', color: THEME.colors.text, flex: 1 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  linkRowText: { color: THEME.colors.primary, fontSize: 14, fontWeight: '600' },
+  linkGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: THEME.spacing.sm },
+  linkGridItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: THEME.colors.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: THEME.radius.md,
+  },
+  linkGridText: { color: THEME.colors.text, fontSize: 13, fontWeight: '600' },
 });

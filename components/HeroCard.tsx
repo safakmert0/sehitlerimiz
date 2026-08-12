@@ -1,18 +1,34 @@
 import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Hero } from '../lib/types';
 import { THEME } from '../lib/theme';
 import { ageAtDeath, formatDateShort, publicMediaUrl } from '../lib/utils';
+import { fetchWikiThumb } from '../lib/wiki';
 
 export default function HeroCard({ hero }: { hero: Hero }) {
   const photo = publicMediaUrl(hero.profile_photo_url);
+  const [wikiPhoto, setWikiPhoto] = useState<string | null>(null);
   const age = ageAtDeath(hero.birth_date, hero.death_date);
+
+  useEffect(() => {
+    if (photo) return;
+    let cancelled = false;
+    fetchWikiThumb(hero.full_name).then((thumb) => {
+      if (!cancelled && thumb) setWikiPhoto(thumb);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hero.full_name, photo]);
+
+  const shown = photo ?? wikiPhoto;
 
   return (
     <View style={styles.card}>
-      {photo ? (
-        <Image source={{ uri: photo }} style={styles.photo} contentFit="cover" transition={200} />
+      {shown ? (
+        <Image source={{ uri: shown }} style={styles.photo} contentFit="cover" transition={200} />
       ) : (
         <View style={[styles.photo, styles.placeholder]}>
           <Ionicons name="medal" size={36} color={THEME.colors.gold} />
