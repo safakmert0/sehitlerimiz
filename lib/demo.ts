@@ -1463,7 +1463,7 @@ export const demoHeroes: Hero[] = [
 // Mustafa Kemal Atatürk (d-h2) ve Ömer Halisdemir (d-h6)
 // liste ne olursa olsun en üstte kalır.
 // ============================================================
-export const PINNED_HERO_IDS = ['d-h2', 'd-h6'];
+export const PINNED_HERO_IDS = ['d-h2', 'd-h6', 'mc-203'];
 
 // ============================================================
 // MSB ŞEHİT BİLGİ KAPISI: KUDSÜS KAYITLARI (337 kişi, 1877-1918)

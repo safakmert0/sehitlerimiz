@@ -17,6 +17,31 @@ function hero(
 
 export const mehmetcikMartyrs: Hero[] = [
 hero({
+  id: "mc-203",
+  full_name: "Zekeriya Zencirli",
+  rank: "Piyade Uzman Çavuş",
+  unit: "Piyade",
+  birth_date: "1992-03-20",
+  birth_place: "Kırşehir / Kaman (Tatık Köyü)",
+  death_date: "2019-05-14",
+  death_place: "Hakkari / Yüksekova (Batıntepe Üs Bölgesi)",
+  conflict_id: "d-14",
+  conflict: {
+    id: "d-14", name: "Görev Şehitleri (2014-2025)", sort_order: 75,
+  },
+  is_martyr: true,
+  is_veteran: false,
+  summary: "Kırşehirli Piyade Uzman Çavuş Zekeriya Zencirli, 14 Mayıs 2019'da Hakkari'nin Yüksekova ilçesi Batıntepe Üs Bölgesi'nde teröristlerle girdiği çatışmada vücuduna isabet eden 7 kurşunla şehit oldu.",
+  story: "Zekeriya Zencirli, 20 Mart 1992'de Kırşehir'in Kaman ilçesine bağlı Tatık Köyü nüfusuna kayıtlı olarak dünyaya geldi. Mahrumiyet içinde büyüdü; toprağı tanıyarak, emeği öğrenerek ve büyüklerinin sözünü dinleyerek yetişti. Küçük yaşlardan itibaren sorumluluk duygusu güçlüydü. Vatani görevini yaptıktan sonra askerliğe uzman çavuş olarak devam etti. Her maaşını şehit ve gazi ailelerine, yardıma muhtaçlara ve çocuk okutmak için harcadı; kendisine elbise almayarak annesinin helalliğini 300 liraya satın aldığını anlatırdı. 14 Mayıs 2019'da Hakkari'nin Yüksekova ilçesi Avaşin bölgesi Batıntepe Üs Bölgesi'ne PKK'lı teröristlerin sızma girişimi sonucu çıkan çatışmada teröristlerle göğüs göğüse çarpıştı ve vücuduna isabet eden 7 kurşunla şehadete yürüdü. Şehadetten kısa süre önce izne geldiğinde annesi Leyla Çelik 'Gel oğlum gitme, içimde bir acı var' demiş; elini kalbinin üstüne koyan Zekeriya, 'Anne ben gitmeyeyim, başkasının çocuğu gitmesin kim gitsin? Gerekirse elli bin şehit verir, elli gram toprak vermeyiz. Gideceğim' diyerek vatan sevgisini en anlamlı sözlerle dile getirmişti. Cenazesi Antalya'nın Alanya ilçesinde toprağa verildi. Ailesine ve milletimize baş sağlığı dileriz; mekanı cennet olsun.",
+  profile_photo_url: null,
+  grave_location: "Antalya / Alanya",
+  lat: 36.544, lng: 31.996,
+  status: 'approved',
+  rejection_reason: null,
+  created_by: null,
+  approved_by: null,
+}),
+hero({
   id: "mc-1",
   full_name: "Eyüp Güner",
   rank: "Er",

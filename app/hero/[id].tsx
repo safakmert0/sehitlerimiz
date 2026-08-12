@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -18,7 +19,13 @@ import { useAuth } from '../../lib/auth';
 import { demoHeroes, isDemoMode } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import { ageAtDeath, formatDate, openMapUrl, publicMediaUrl } from '../../lib/utils';
-import { externalSearchLinks, fetchWikiInfo, type WikiResult } from '../../lib/wiki';
+import {
+  externalSearchLinks,
+  fetchWikiGallery,
+  fetchWikiInfo,
+  fetchWikiVideos,
+  type WikiResult,
+} from '../../lib/wiki';
 import type { Hero, HeroMedia, Tribute } from '../../lib/types';
 import MediaGallery from '../../components/MediaGallery';
 import TributeItem from '../../components/TributeItem';
@@ -26,6 +33,7 @@ import TributeItem from '../../components/TributeItem';
 export default function HeroDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { width: screenWidth } = useWindowDimensions();
 
   const [hero, setHero] = useState<Hero | null>(null);
   const [media, setMedia] = useState<HeroMedia[]>([]);
@@ -36,6 +44,9 @@ export default function HeroDetailScreen() {
   const [wiki, setWiki] = useState<WikiResult | null>(null);
   const [wikiLoading, setWikiLoading] = useState(false);
   const [wikiError, setWikiError] = useState(false);
+  const [wikiPhotos, setWikiPhotos] = useState<string[]>([]);
+  const [wikiVideos, setWikiVideos] = useState<{ url: string; caption: string }[]>([]);
+  const [coverRatio, setCoverRatio] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -95,12 +106,14 @@ export default function HeroDetailScreen() {
     let cancelled = false;
     setWikiLoading(true);
     setWikiError(false);
-    fetchWikiInfo(hero.full_name)
-      .then((r) => {
-        if (!cancelled) {
-          setWiki(r);
-          setWikiLoading(false);
-        }
+    const name = hero.full_name;
+    Promise.all([fetchWikiInfo(name), fetchWikiGallery(name), fetchWikiVideos(name)])
+      .then(([info, gallery, videos]) => {
+        if (cancelled) return;
+        setWiki(info);
+        setWikiPhotos(gallery);
+        setWikiVideos(videos);
+        setWikiLoading(false);
       })
       .catch(() => {
         if (!cancelled) {
@@ -115,22 +128,39 @@ export default function HeroDetailScreen() {
 
   const photos = useMemo(() => media.filter((m) => m.type === 'photo'), [media]);
   const videos = useMemo(() => media.filter((m) => m.type === 'video'), [media]);
-  const wikiPhotos = useMemo(
+  const photo = publicMediaUrl(hero?.profile_photo_url ?? null);
+  const coverSource = photo ?? wiki?.thumbnail ?? null;
+  const coverHeight = coverRatio ? Math.min(screenWidth * coverRatio, screenWidth * 1.5) : 300;
+  const galleryHeight = Math.min(screenWidth, 320);
+
+  const wikiPhotoMedia = useMemo(
     () =>
-      wiki?.thumbnail
-        ? ([
-            {
-              id: 'wiki-thumb',
-              type: 'photo' as const,
-              url: wiki.thumbnail,
-              caption: `${wiki.title} — Vikipedi`,
-              status: 'approved' as const,
-              created_at: '',
-            },
-          ] as HeroMedia[])
-        : [],
-    [wiki]
+      wikiPhotos.map<HeroMedia>((url, idx) => ({
+        id: `wiki-photo-${idx}`,
+        type: 'photo',
+        url,
+        caption: 'Vikipedi',
+        status: 'approved',
+        created_at: '',
+      })),
+    [wikiPhotos]
   );
+
+  const wikiVideoMedia = useMemo(
+    () =>
+      wikiVideos.map<HeroMedia>((v, idx) => ({
+        id: `wiki-video-${idx}`,
+        type: 'video',
+        url: v.url,
+        caption: v.caption,
+        status: 'approved',
+        created_at: '',
+      })),
+    [wikiVideos]
+  );
+
+  const allPhotos = [...wikiPhotoMedia, ...photos];
+  const allVideos = [...wikiVideoMedia, ...videos];
 
   const reportHero = () => {
     if (!user) {
@@ -198,7 +228,6 @@ export default function HeroDetailScreen() {
   };
 
   const age = ageAtDeath(hero?.birth_date ?? null, hero?.death_date ?? null);
-  const photo = publicMediaUrl(hero?.profile_photo_url ?? null);
 
   return (
     <View style={styles.container}>
@@ -209,19 +238,16 @@ export default function HeroDetailScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll}>
-          {photo ? (
+          {coverSource ? (
             <Image
-              source={{ uri: photo }}
-              style={styles.cover}
-              contentFit="cover"
-              contentPosition="top"
-            />
-          ) : wiki?.thumbnail ? (
-            <Image
-              source={{ uri: wiki.thumbnail }}
-              style={styles.cover}
-              contentFit="cover"
-              contentPosition="top"
+              source={{ uri: coverSource }}
+              style={[styles.cover, { height: coverHeight }]}
+              contentFit="contain"
+              onLoad={(e) => {
+                const w = e.source.width;
+                const h = e.source.height;
+                if (w && h) setCoverRatio(h / w);
+              }}
             />
           ) : (
             <View style={[styles.cover, styles.coverPlaceholder]}>
@@ -307,17 +333,17 @@ export default function HeroDetailScreen() {
               </View>
             ) : null}
 
-            {videos.length > 0 && (
+            {allVideos.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Videolar</Text>
-                <MediaGallery media={videos} />
+                <MediaGallery media={allVideos} galleryHeight={galleryHeight} />
               </View>
             )}
 
-            {(photos.length > 0 || wikiPhotos.length > 0) && (
+            {allPhotos.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Fotoğraflar</Text>
-                <MediaGallery media={[...wikiPhotos, ...photos]} />
+                <MediaGallery media={allPhotos} galleryHeight={galleryHeight} />
               </View>
             )}
 

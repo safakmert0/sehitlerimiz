@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -7,7 +8,13 @@ import { THEME } from '../lib/theme';
 import { publicMediaUrl } from '../lib/utils';
 import type { HeroMedia } from '../lib/types';
 
-export default function MediaGallery({ media }: { media: HeroMedia[] }) {
+export default function MediaGallery({
+  media,
+  galleryHeight = 220,
+}: {
+  media: HeroMedia[];
+  galleryHeight?: number;
+}) {
   const hasVideo = media.some((m) => m.type === 'video');
 
   if (hasVideo) {
@@ -15,9 +22,9 @@ export default function MediaGallery({ media }: { media: HeroMedia[] }) {
       <View style={styles.gallery}>
         {media.map((item) =>
           item.type === 'video' ? (
-            <VideoItem key={item.id} item={item} />
+            <VideoItem key={item.id} item={item} galleryHeight={galleryHeight} />
           ) : (
-            <PhotoItem key={item.id} item={item} />
+            <PhotoItem key={item.id} item={item} galleryHeight={galleryHeight} />
           )
         )}
       </View>
@@ -31,23 +38,38 @@ export default function MediaGallery({ media }: { media: HeroMedia[] }) {
       data={media}
       keyExtractor={(m) => m.id}
       contentContainerStyle={{ gap: THEME.spacing.sm }}
-      renderItem={({ item }) => <PhotoItem item={item} />}
+      renderItem={({ item }) => <PhotoItem item={item} galleryHeight={galleryHeight} />}
     />
   );
 }
 
-function PhotoItem({ item }: { item: HeroMedia }) {
+function PhotoItem({ item, galleryHeight }: { item: HeroMedia; galleryHeight: number }) {
   const url = publicMediaUrl(item.url);
+  const [ratio, setRatio] = useState<number | null>(null);
   if (!url) return null;
   return (
     <View style={styles.photoWrap}>
-      <Image source={{ uri: url }} style={styles.photo} contentFit="cover" transition={200} />
+      <Image
+        source={{ uri: url }}
+        style={[
+          styles.photo,
+          { width: 'auto', maxWidth: '100%', height: galleryHeight },
+          ratio ? { aspectRatio: ratio } : styles.photoFallback,
+        ]}
+        contentFit="contain"
+        transition={200}
+        onLoad={(e) => {
+          const w = e.source.width;
+          const h = e.source.height;
+          if (w && h) setRatio(w / h);
+        }}
+      />
       {item.caption ? <Text style={styles.caption}>{item.caption}</Text> : null}
     </View>
   );
 }
 
-function VideoItem({ item }: { item: HeroMedia }) {
+function VideoItem({ item, galleryHeight }: { item: HeroMedia; galleryHeight: number }) {
   const url = publicMediaUrl(item.url) ?? '';
   const player = useVideoPlayer(url, (p) => {
     p.loop = false;
@@ -60,8 +82,8 @@ function VideoItem({ item }: { item: HeroMedia }) {
     <View style={styles.videoWrap}>
       <VideoView
         player={player}
-        style={styles.video}
-        contentFit="cover"
+        style={[styles.video, { height: galleryHeight }]}
+        contentFit="contain"
         nativeControls={false}
         surfaceType="textureView"
         fullscreenOptions={{ enable: true }}
@@ -83,10 +105,11 @@ function VideoItem({ item }: { item: HeroMedia }) {
 
 const styles = StyleSheet.create({
   gallery: { gap: THEME.spacing.md },
-  photoWrap: { gap: 4, width: 240 },
-  photo: { width: 240, height: 180, borderRadius: THEME.radius.md, backgroundColor: '#EEE7DA' },
+  photoWrap: { gap: 4, alignItems: 'flex-start' },
+  photo: { backgroundColor: '#EEE7DA' },
+  photoFallback: { width: 260, height: 220 },
   videoWrap: { gap: 4 },
-  video: { width: '100%', height: 220, borderRadius: THEME.radius.md, backgroundColor: '#111' },
+  video: { width: '100%', borderRadius: THEME.radius.md, backgroundColor: '#111' },
   playButton: {
     position: 'absolute',
     top: 80,

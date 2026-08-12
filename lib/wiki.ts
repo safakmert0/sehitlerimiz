@@ -1,5 +1,9 @@
 const TR_API = 'https://tr.wikipedia.org/w/api.php';
 const REST_SUMMARY = 'https://tr.wikipedia.org/api/rest_v1/page/summary/';
+const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
+
+/** Sayfa görsellerinde elemesi gereken dosya türleri (logo/ikon/harita vb.) */
+const SKIP_FILE_PATTERN = /logo|icon|map|flag|coat|seal|signature|stub|wikimedia|svg|locator|insignia|buğday|bayrak/i;
 
 export interface WikiResult {
   title: string;
@@ -133,4 +137,86 @@ export async function fetchWikiThumb(name: string): Promise<string | null> {
   const result = await fetchWikiInfo(name);
   thumbCache.set(name, result?.thumbnail ?? null);
   return result?.thumbnail ?? null;
+}
+
+const galleryCache = new Map<string, string[]>();
+
+/** Vikipedi sayfasındaki gerçek fotoğrafları toplar (logo/ikon/harita hariç) */
+export async function fetchWikiGallery(name: string): Promise<string[]> {
+  const cached = galleryCache.get(name);
+  if (cached !== undefined) return cached;
+  try {
+    const result = await fetchWikiInfo(name);
+    if (!result) {
+      galleryCache.set(name, []);
+      return [];
+    }
+    const title = decodeURIComponent(result.pageUrl.split('/wiki/')[1] ?? '');
+    const filesRes = await fetch(
+      `${TR_API}?action=query&titles=${encodeURIComponent(title)}&prop=images&imlimit=40&format=json&origin=*`
+    );
+    const filesData = await filesRes.json();
+    const pages = Object.values(filesData?.query?.pages ?? {}) as Array<{
+      images?: { title: string }[];
+    }>;
+    const fileTitles = (pages[0]?.images ?? [])
+      .map((i) => i.title)
+      .filter((t) => !SKIP_FILE_PATTERN.test(t));
+
+    const infoRes = await fetch(
+      `${TR_API}?action=query&titles=${encodeURIComponent(
+        fileTitles.slice(0, 12).join('|')
+      )}&prop=imageinfo&iiprop=url|size&iiurlwidth=1200&format=json&origin=*`
+    );
+    const infoData = await infoRes.json();
+    const files = Object.values(infoData?.query?.pages ?? {}) as Array<{
+      imageinfo?: { thumburl?: string; width?: number; height?: number; url?: string }[];
+    }>;
+    const photos = files
+      .flatMap((p) => p.imageinfo ?? [])
+      .filter((i) => i.thumburl && i.width && i.height)
+      .sort((a, b) => (b.width ?? 0) - (a.width ?? 0))
+      .slice(0, 6)
+      .map((i) => i.thumburl as string);
+    galleryCache.set(name, photos);
+    return photos;
+  } catch {
+    galleryCache.set(name, []);
+    return [];
+  }
+}
+
+const videoCache = new Map<string, { url: string; caption: string }[]>();
+
+/** Wikimedia Commons'ta kişi adıyla ilişkili videoları arar */
+export async function fetchWikiVideos(name: string): Promise<{ url: string; caption: string }[]> {
+  const cached = videoCache.get(name);
+  if (cached !== undefined) return cached;
+  try {
+    const base = normalize(name);
+    const res = await fetch(
+      `${COMMONS_API}?action=query&generator=search&gsrsearch=${encodeURIComponent(
+        `filetype:video ${base}`
+      )}&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=1280&format=json&origin=*`
+    );
+    const data = await res.json();
+    const hits = Object.values(data?.query?.pages ?? {}) as Array<{
+      title?: string;
+      imageinfo?: { thumburl?: string; url?: string; width?: number; height?: number }[];
+    }>;
+    const needThumb = hits.some((h) => h.imageinfo?.[0]?.thumburl);
+    const videos = hits
+      .filter((h) => h.imageinfo?.[0]?.thumburl && h.imageinfo?.[0]?.url && !SKIP_FILE_PATTERN.test(h.title ?? ''))
+      .slice(0, 4)
+      .map((h) => ({
+        url: (h.imageinfo?.[0] as { url: string }).url,
+        caption: (h.title ?? '').replace(/^File:/, ''),
+      }));
+    void needThumb;
+    videoCache.set(name, videos);
+    return videos;
+  } catch {
+    videoCache.set(name, []);
+    return [];
+  }
 }

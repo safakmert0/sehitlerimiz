@@ -55,11 +55,11 @@ export type MediaType = 'photo' | 'video' | 'audio' | 'document';
 
 export interface HeroMedia {
   id: string;
-  hero_id: string;
+  hero_id?: string;
   type: MediaType;
   url: string;
   caption: string | null;
-  uploaded_by: string | null;
+  uploaded_by?: string | null;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   hero?: { id: string; full_name?: string | null } | null;
