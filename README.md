@@ -141,76 +141,27 @@ Uygulamanın 2. sekmesinde kayıtlı kahramanların sayıları görüntülenir:
 
 ---
 
-## 📦 Derleme (iOS + Android)
+## 📦 Android APK derleme ve yayınlama
 
-Derlemeler **EAS Build** (Expo bulutu) + **GitHub Actions** ile yapılır; yerel bilgisayarda Android SDK / Xcode gerekmez.
+GitHub Actions içindeki **Android Build + Release (APK)** iş akışı, elle başlatıldığında veya `v*` etiketi gönderildiğinde APK üretir. Etiketli derlemelerde APK, GitHub Release'e de eklenir.
 
-### 1. GitHub'a gönderilen repo
-
-Uygulama şu repoda: **https://github.com/safakmert0/sehitlerimiz**
-
-### 2. GitHub Secrets ekleyin
-
-Repo sayfasında **Settings → Secrets and variables → Actions** bölümüne ekleyin:
+Gerekirse repo ayarlarından şu iki Actions secret'ını ekleyin; yoklarsa uygulama demo verisiyle derlenir:
 
 | Secret adı | Nereden alınır |
 |---|---|
-| `EXPO_TOKEN` | [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens) (Expo hesabı gerekli, ücretsiz) |
 | `EXPO_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
 
-### 3. Derlemeyi başlatın
-
-Repo sayfasında **Actions → "EAS Build (iOS + Android)" → Run workflow** seçin:
-
-- `all` = hem iOS hem Android
-- Profil `preview` = APK (Android) + iç test (iOS) → doğrudan telefona kurulabilir
-- Profil `production` = Play Store (AAB) + App Store sürümü
-
-### 4. İlk sefere özel gereksinimler
-
-- **iOS**: Apple Developer hesabı gereklidir (yıllık $99). EAS ilk iOS derlemesinde sizden Apple kimliği ister:
-  ```
-  npx eas-cli credentials --platform ios
-  ```
-  (Windows/Mac herhangi bir makineden bir kez yapılır.)
-- **Android (Play Store)**: [Google Play Console](https://play.google.com/console) (tek seferlik $25). Mağazaya yüklemek için `production` profiliyle AAB derleyin.
-- **Test için**: `preview` profili APK üretir, GitHub'da indirme linki çıkar.
-
-### 5. Versiyonlar
-
-`git tag v1.0.0` etiketi oluşturup push ederseniz derleme otomatik başlar ve **APK + IPA otomatik olarak GitHub Release sayfasına yüklenir**:
+Yeni sürüm yayımlamak için:
 
 ```bash
-git tag v1.0.1 && git push origin v1.0.1
+git tag v1.3.1
+git push origin v1.3.1
 ```
 
-Derlenen dosyaları **https://github.com/safakmert0/sehitlerimiz/releases** sayfasında bulabilirsiniz.
+İş akışı önce tür ve demo veri denetimini çalıştırır, ardından Android APK'sını derler. Oluşan dosya Actions artefaktlarında; etiketli sürümlerde ayrıca [GitHub Releases](https://github.com/safakmert0/sehitlerimiz/releases) sayfasındadır.
 
-### 6. Hazır APK
-
-**v1.0.0 sürümü zaten derlendi ve Release'e yüklendi:** [APK'yi indirin](https://github.com/safakmert0/sehitlerimiz/releases/tag/v1.0.0) → telefona kopyalayın → kurun.
-
-> Telefonda "Bilinmeyen kaynaklardan yükleme" iznini açmanız gerekebilir.
-> Bu sürüm **demo verileriyle** çalışır (Supabase bağlantısı olmadan da tamamen kullanılabilir).
-
-### 7. İmza anahtarı (ÖNEMLİ)
-
-Uygulama `sehitlerimiz.keystore` ile imzalanmıştır. Google Play'e yüklenecek sürümler aynı imzayı taşımalıdır.
-Bu dosyayı **güvenli bir yere yedekleyin** (kaybolursa uygulama güncellenemez):
-
-- Yerel: `android/app/keystore/sehitlerimiz.keystore`
-- Parola: `sehitlerimiz2026` (üretim öncesi mutlaka değiştirin)
-
-> ⚠️ Alternatif: EAS Build kendi imzasını üretir; Play Store'a geçerken EAS imzasını kullanmak daha güvenlidir (Play App Signing ile anahtar kaybı riski ortadan kalkar).
-
-### 8. IPA (iOS) notu
-
-IPA yalnızca iki yolla üretilebilir:
-1. **EAS Build** (önerilen): `EXPO_TOKEN` + Apple Developer hesabı eklendikten sonra workflow ile otomatik üretilir ve Release'e yüklenir.
-2. **Mac + Xcode** ile yerel derleme (Linux üzerinde üretilemez).
-
-Apple Developer hesabı olmadan IPA üretimi teknik olarak imkansızdır (Apple imza zorunluluğu).
+> iOS/IPA için henüz bir CI iş akışı bulunmuyor. Bu hedef eklenecekse Apple Developer hesabı ve ayrı imzalama yapılandırması gerekir.
 
 ---
 

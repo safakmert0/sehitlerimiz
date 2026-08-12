@@ -31,6 +31,9 @@ jobs:
       - name: 📦 Bağımlılıklar
         run: npm ci --legacy-peer-deps
 
+      - name: 🔎 Tür ve demo veri denetimi
+        run: npm run check
+
       - name: 🔌 Supabase ortam değişkenleri (secret varsa)
         run: |
           if [ -n "${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}" ]; then

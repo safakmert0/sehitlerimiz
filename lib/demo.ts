@@ -1,6 +1,7 @@
 import type { Conflict, Hero } from './types';
 import { kudusMartyrs } from './data/kudus_martyrs';
 import { mehmetcikMartyrs } from './data/mehmetcik_martyrs';
+import { temmuz15Martyrs } from './data/temmuz15_martyrs';
 
 export function isDemoMode(): boolean {
   return !process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -1297,7 +1298,7 @@ export const demoHeroes: Hero[] = [
   // SINIR ÖTESİ OPERASYONLAR (d-8)
   // ============================================================
   hero({
-    id: 'd-h44',
+    id: 'd-h47',
     full_name: 'Ercan Çelik',
     rank: 'Uzman Çavuş',
     unit: 'Fırat Kalkanı Harekatı',
@@ -1323,7 +1324,7 @@ export const demoHeroes: Hero[] = [
     approved_by: null,
   }),
   hero({
-    id: 'd-h45',
+    id: 'd-h48',
     full_name: 'Musa Özalkan',
     rank: 'Astsubay Üstçavuş',
     unit: 'Zeytin Dalı Harekatı',
@@ -1349,7 +1350,7 @@ export const demoHeroes: Hero[] = [
     approved_by: null,
   }),
   hero({
-    id: 'd-h46',
+    id: 'd-h49',
     full_name: 'Ahmet Topçu',
     rank: 'Astsubay Çavuş',
     unit: 'Barış Pınarı Harekatı',
@@ -1375,7 +1376,7 @@ export const demoHeroes: Hero[] = [
     approved_by: null,
   }),
   hero({
-    id: 'd-h47',
+    id: 'd-h50',
     full_name: 'Mustafa Muhammed Ak',
     rank: 'Piyade Uzman Çavuş',
     unit: 'Bahar Kalkanı Harekatı',
@@ -1431,7 +1432,7 @@ export const demoHeroes: Hero[] = [
     approved_by: null,
   }),
   hero({
-    id: 'd-h48',
+    id: 'd-h51',
     full_name: 'Halil Kut',
     rank: 'Mirliva (Tuğgeneral)',
     unit: 'Irak Cephesi Komutanı',
@@ -1476,3 +1477,4 @@ demoHeroes.push(...kudusMartyrs);
 // Kaynak: https://www.mehmetcik.org.tr/sehitlerimiz
 // ============================================================
 demoHeroes.push(...mehmetcikMartyrs);
+demoHeroes.push(...temmuz15Martyrs);
