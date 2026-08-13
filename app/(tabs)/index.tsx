@@ -16,6 +16,7 @@ import { cacheHeroes, getCachedHeroes } from '../../lib/cache';
 import { demoConflicts, demoHeroes, isDemoMode, PINNED_HERO_IDS } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import { SITE_TAGLINE } from '../../lib/utils';
+import { approvedHeroRecord } from '../../lib/heroRecords';
 import type { Conflict, Hero } from '../../lib/types';
 import HeroCard from '../../components/HeroCard';
 
@@ -105,10 +106,14 @@ export default function HomeScreen() {
       if (error) throw error;
 
       const raw = data ?? [];
-      const mapped = raw.map((h) => ({
-        ...h,
-        conflict: Array.isArray(h.conflict) ? h.conflict[0] ?? null : (h.conflict ?? null),
-      })) as Hero[];
+      const mapped = raw
+        .map((h) =>
+          approvedHeroRecord({
+            ...h,
+            conflict: Array.isArray(h.conflict) ? h.conflict[0] ?? null : (h.conflict ?? null),
+          } as Hero)
+        )
+        .filter((hero): hero is Hero => hero !== null);
       setHeroes((prev) => (replace ? mapped : [...prev, ...mapped]));
       setEndReached((data ?? []).length < PAGE_SIZE);
       if (replace && mapped.length > 0) {

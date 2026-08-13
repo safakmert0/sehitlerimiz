@@ -6269,5 +6269,6 @@ export const temmuz15Martyrs: Hero[] = rawTemmuz15Martyrs.map((hero) => ({
   ...hero,
   birth_date: null,
   death_place: null,
+  summary: null,
   story: null,
 }));

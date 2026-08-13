@@ -6,6 +6,7 @@ import type { Hero } from '../lib/types';
 import { THEME } from '../lib/theme';
 import { ageAtDeath, formatDateShort, publicMediaUrl } from '../lib/utils';
 import { fetchWikiThumb } from '../lib/wiki';
+import { canAutoEnrichHero, recordDisambiguator } from '../lib/heroRecords';
 
 export default function HeroCard({ hero }: { hero: Hero }) {
   const photo = publicMediaUrl(hero.profile_photo_url);
@@ -13,7 +14,7 @@ export default function HeroCard({ hero }: { hero: Hero }) {
   const age = ageAtDeath(hero.birth_date, hero.death_date);
 
   useEffect(() => {
-    if (photo) return;
+    if (photo || !canAutoEnrichHero(hero)) return;
     let cancelled = false;
     fetchWikiThumb(hero.full_name).then((thumb) => {
       if (!cancelled && thumb) setWikiPhoto(thumb);
@@ -21,7 +22,7 @@ export default function HeroCard({ hero }: { hero: Hero }) {
     return () => {
       cancelled = true;
     };
-  }, [hero.full_name, photo]);
+  }, [hero, photo]);
 
   const shown = photo ?? wikiPhoto;
 
@@ -56,6 +57,12 @@ export default function HeroCard({ hero }: { hero: Hero }) {
             {[hero.rank, hero.unit].filter(Boolean).join(' • ')}
           </Text>
         )}
+
+        {recordDisambiguator(hero) ? (
+          <Text style={styles.recordIdentity} numberOfLines={1}>
+            {recordDisambiguator(hero)}
+          </Text>
+        ) : null}
 
         <View style={styles.datesRow}>
           {hero.birth_date && (
@@ -116,6 +123,7 @@ const styles = StyleSheet.create({
   },
   badgeVeteranText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   meta: { color: THEME.colors.textMuted, fontSize: 13 },
+  recordIdentity: { color: THEME.colors.primaryDark, fontSize: 11, fontWeight: '600' },
   datesRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   dates: { color: THEME.colors.textMuted, fontSize: 12 },
   conflict: {

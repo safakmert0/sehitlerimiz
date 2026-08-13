@@ -1,5 +1,6 @@
 import { temmuz15Martyrs } from '../lib/data/temmuz15_martyrs';
 import { demoHeroes } from '../lib/demo';
+import { canAutoEnrichHero, recordDisambiguator } from '../lib/heroRecords';
 
 function fail(message: string): void {
   throw new Error(`Veri denetimi başarısız: ${message}`);
@@ -17,6 +18,14 @@ for (const hero of demoHeroes) {
   ids.add(hero.id);
 }
 
+const reviewRequiredIds = ['msb-95', 'msb-107923', 'msb-23988', 'msb-109689', 'mc-120', 'd-h44'];
+for (const id of reviewRequiredIds) {
+  const hero = demoHeroes.find((item) => item.id === id);
+  if (!hero || hero.status !== 'pending') {
+    fail(`${id} eksik veya şüpheli ad kaydı inceleme kuyruğuna alınmadı.`);
+  }
+}
+
 for (const hero of temmuz15Martyrs) {
   if (!hero.id.startsWith('t15-')) fail(`${hero.full_name} için geçersiz kayıt kimliği.`);
   if (hero.conflict_id !== 'd-6' || hero.conflict?.id !== 'd-6') {
@@ -28,8 +37,23 @@ for (const hero of temmuz15Martyrs) {
   if (!hero.full_name.trim() || !hero.death_date) {
     fail(`${hero.id} için zorunlu ad veya şehadet tarihi eksik.`);
   }
-  if (hero.birth_date !== null || hero.death_place !== null || hero.story !== null) {
+  if (hero.birth_date !== null || hero.death_place !== null || hero.story !== null || hero.summary !== null) {
     fail(`${hero.full_name} için doğrulanmamış ayrıntı yayımlanıyor.`);
+  }
+}
+
+for (const hero of demoHeroes) {
+  if (!hero.full_name.trim()) fail(`${hero.id} için boş kişi adı yayımlanıyor.`);
+  if (hero.id.startsWith('msb-')) {
+    if (!recordDisambiguator(hero)?.includes('MSB sicil no:')) {
+      fail(`${hero.full_name} için MSB ayırt edici kaynak kimliği eksik.`);
+    }
+    if (canAutoEnrichHero(hero)) {
+      fail(`${hero.full_name} için belirsiz MSB kaydında otomatik dış kaynak açık.`);
+    }
+    if (/(None|Cephes Cephesi)/.test([hero.summary, hero.story].join(' '))) {
+      fail(`${hero.full_name} için ham metin kalıntısı yayımlanıyor.`);
+    }
   }
 }
 

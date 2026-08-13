@@ -2,6 +2,7 @@ import type { Conflict, Hero } from './types';
 import { kudusMartyrs } from './data/kudus_martyrs';
 import { mehmetcikMartyrs } from './data/mehmetcik_martyrs';
 import { temmuz15Martyrs } from './data/temmuz15_martyrs';
+import { reviewedHero } from './heroRecords';
 
 export function isDemoMode(): boolean {
   return !process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -1478,3 +1479,9 @@ demoHeroes.push(...kudusMartyrs);
 // ============================================================
 demoHeroes.push(...mehmetcikMartyrs);
 demoHeroes.push(...temmuz15Martyrs);
+
+// Kaynak dosyaları denetim izi olarak korunur. Uygulama ise şablon anlatı ve
+// ham dönüştürme kalıntılarını göstermeyen, kaynak-temelli sunum verisini kullanır.
+for (let index = 0; index < demoHeroes.length; index += 1) {
+  demoHeroes[index] = reviewedHero(demoHeroes[index]);
+}

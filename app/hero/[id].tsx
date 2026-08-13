@@ -20,6 +20,12 @@ import { demoHeroes, isDemoMode } from '../../lib/demo';
 import { THEME } from '../../lib/theme';
 import { ageAtDeath, formatDate, openMapUrl, publicMediaUrl } from '../../lib/utils';
 import {
+  approvedHeroRecord,
+  canAutoEnrichHero,
+  recordDisambiguator,
+  recordSourceLabel,
+} from '../../lib/heroRecords';
+import {
   externalSearchLinks,
   fetchWikiGallery,
   fetchWikiInfo,
@@ -47,12 +53,13 @@ export default function HeroDetailScreen() {
   const [wikiPhotos, setWikiPhotos] = useState<string[]>([]);
   const [wikiVideos, setWikiVideos] = useState<{ url: string; caption: string }[]>([]);
   const [coverRatio, setCoverRatio] = useState<number | null>(null);
+  const autoEnrichmentEnabled = hero ? canAutoEnrichHero(hero) : false;
 
   const loadData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     if (isDemoMode()) {
-      const found = demoHeroes.find((h) => h.id === id) ?? null;
+      const found = demoHeroes.find((h) => h.id === id && h.status === 'approved') ?? null;
       setHero(found);
       setMedia([]);
       setTributes([]);
@@ -68,8 +75,7 @@ export default function HeroDetailScreen() {
         supabase
           .from('heroes')
           .select(
-            `*, conflict:conflicts (id, name, sort_order), 
-             approved_media:hero_media (id, type, url, caption)`
+            `*, conflict:conflicts (id, name, sort_order)`
           )
           .eq('id', id)
           .single(),
@@ -87,7 +93,7 @@ export default function HeroDetailScreen() {
           .order('created_at', { ascending: false })
           .limit(100),
       ]);
-      if (heroData) setHero(heroData as Hero);
+      if (heroData) setHero(approvedHeroRecord(heroData as Hero));
       if (mediaData) setMedia(mediaData as HeroMedia[]);
       if (tributesData) setTributes(tributesData as unknown as Tribute[]);
     } catch (e) {
@@ -102,7 +108,13 @@ export default function HeroDetailScreen() {
   }, [loadData]);
 
   useEffect(() => {
-    if (!hero) return;
+    if (!hero || !autoEnrichmentEnabled) {
+      setWiki(null);
+      setWikiPhotos([]);
+      setWikiVideos([]);
+      setWikiLoading(false);
+      return;
+    }
     let cancelled = false;
     setWikiLoading(true);
     setWikiError(false);
@@ -124,7 +136,7 @@ export default function HeroDetailScreen() {
     return () => {
       cancelled = true;
     };
-  }, [hero]);
+  }, [hero, autoEnrichmentEnabled]);
 
   const photos = useMemo(() => media.filter((m) => m.type === 'photo'), [media]);
   const videos = useMemo(() => media.filter((m) => m.type === 'video'), [media]);
@@ -159,8 +171,13 @@ export default function HeroDetailScreen() {
     [wikiVideos]
   );
 
-  const allPhotos = [...wikiPhotoMedia, ...photos];
-  const allVideos = [...wikiVideoMedia, ...videos];
+  const allPhotos = [...photos, ...wikiPhotoMedia].filter(
+    (item, index, items) =>
+      items.findIndex((candidate) => candidate.url === item.url) === index && item.url !== coverSource
+  );
+  const allVideos = [...videos, ...wikiVideoMedia].filter(
+    (item, index, items) => items.findIndex((candidate) => candidate.url === item.url) === index
+  );
 
   const reportHero = () => {
     if (!user) {
@@ -275,6 +292,9 @@ export default function HeroDetailScreen() {
             </View>
 
             <Text style={styles.name}>{hero.full_name}</Text>
+            {recordDisambiguator(hero) ? (
+              <Text style={styles.recordIdentity}>{recordDisambiguator(hero)}</Text>
+            ) : null}
             {(hero.rank || hero.unit) && (
               <Text style={styles.rank}>
                 {[hero.rank, hero.unit].filter(Boolean).join(' • ')}
@@ -333,6 +353,13 @@ export default function HeroDetailScreen() {
               </View>
             ) : null}
 
+            {recordSourceLabel(hero) ? (
+              <View style={styles.sourceNote}>
+                <Ionicons name="shield-checkmark-outline" size={17} color={THEME.colors.primary} />
+                <Text style={styles.sourceNoteText}>{recordSourceLabel(hero)}</Text>
+              </View>
+            ) : null}
+
             {allVideos.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Videolar</Text>
@@ -347,50 +374,61 @@ export default function HeroDetailScreen() {
               </View>
             )}
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>İnternet Kaynakları</Text>
-              {wikiLoading ? (
-                <ActivityIndicator color={THEME.colors.primary} style={{ alignSelf: 'flex-start' }} />
-              ) : wiki ? (
-                <View style={styles.wikiCard}>
-                  <View style={styles.wikiHeader}>
-                    <Ionicons name="book" size={18} color={THEME.colors.primary} />
-                    <Text style={styles.wikiTitle}>Vikipedi — {wiki.title}</Text>
-                  </View>
-                  <Text style={styles.bodyText} numberOfLines={6}>
-                    {wiki.extract}
+            {(autoEnrichmentEnabled || recordSourceLabel(hero)) && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>İnternet Kaynakları</Text>
+                {!autoEnrichmentEnabled && (
+                  <Text style={styles.bodyText}>
+                    Bu kaynak kaydı için yanlış kişi eşleşmesini önlemek adına otomatik internet içeriği gösterilmez.
                   </Text>
-                  <Pressable
-                    style={styles.linkRow}
-                    onPress={() => Linking.openURL(wiki.pageUrl).catch(() => {})}
-                  >
-                    <Ionicons name="open-outline" size={16} color={THEME.colors.primary} />
-                    <Text style={styles.linkRowText}>Vikipedi'de oku</Text>
-                  </Pressable>
-                </View>
-              ) : wikiError ? (
-                <Text style={styles.bodyText}>
-                  İnternet bağlantısı sırasında bir sorun oluştu. Tekrar deneyin.
-                </Text>
-              ) : (
-                <Text style={styles.bodyText}>
-                  Bu kişi için Vikipedi'de sayfa bulunamadı. Yine de internetten arayabilirsiniz.
-                </Text>
-              )}
+                )}
+                {autoEnrichmentEnabled && (
+                  <>
+                    {wikiLoading ? (
+                      <ActivityIndicator color={THEME.colors.primary} style={{ alignSelf: 'flex-start' }} />
+                    ) : wiki ? (
+                      <View style={styles.wikiCard}>
+                        <View style={styles.wikiHeader}>
+                          <Ionicons name="book" size={18} color={THEME.colors.primary} />
+                          <Text style={styles.wikiTitle}>Vikipedi — {wiki.title}</Text>
+                        </View>
+                        <Text style={styles.bodyText} numberOfLines={6}>
+                          {wiki.extract}
+                        </Text>
+                        <Pressable
+                          style={styles.linkRow}
+                          onPress={() => Linking.openURL(wiki.pageUrl).catch(() => {})}
+                        >
+                          <Ionicons name="open-outline" size={16} color={THEME.colors.primary} />
+                          <Text style={styles.linkRowText}>Vikipedi'de oku</Text>
+                        </Pressable>
+                      </View>
+                    ) : wikiError ? (
+                      <Text style={styles.bodyText}>
+                        İnternet bağlantısı sırasında bir sorun oluştu. Tekrar deneyin.
+                      </Text>
+                    ) : (
+                      <Text style={styles.bodyText}>
+                        Bu kişi için Vikipedi'de sayfa bulunamadı. Yine de internetten arayabilirsiniz.
+                      </Text>
+                    )}
 
-              <View style={styles.linkGrid}>
-                {externalSearchLinks(hero.full_name).map((l) => (
-                  <Pressable
-                    key={l.label}
-                    style={styles.linkGridItem}
-                    onPress={() => Linking.openURL(l.url).catch(() => {})}
-                  >
-                    <Ionicons name={l.icon} size={20} color={THEME.colors.primary} />
-                    <Text style={styles.linkGridText}>{l.label}</Text>
-                  </Pressable>
-                ))}
+                    <View style={styles.linkGrid}>
+                      {externalSearchLinks(hero.full_name).map((l) => (
+                        <Pressable
+                          key={l.label}
+                          style={styles.linkGridItem}
+                          onPress={() => Linking.openURL(l.url).catch(() => {})}
+                        >
+                          <Ionicons name={l.icon} size={20} color={THEME.colors.primary} />
+                          <Text style={styles.linkGridText}>{l.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </>
+                )}
               </View>
-            </View>
+            )}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Anı Defteri</Text>
@@ -506,6 +544,7 @@ const styles = StyleSheet.create({
   },
   badgeConflictText: { color: THEME.colors.primaryDark, fontSize: 12, fontWeight: '600' },
   name: { fontSize: 26, fontWeight: '800', color: THEME.colors.text },
+  recordIdentity: { fontSize: 13, color: THEME.colors.textMuted, marginTop: -8, lineHeight: 19 },
   rank: { fontSize: 15, color: THEME.colors.textMuted, marginTop: -8 },
   infoCard: {
     backgroundColor: THEME.colors.card,
@@ -523,6 +562,15 @@ const styles = StyleSheet.create({
   section: { gap: THEME.spacing.sm },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: THEME.colors.text },
   bodyText: { fontSize: 15, lineHeight: 24, color: THEME.colors.text },
+  sourceNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: THEME.spacing.sm,
+    backgroundColor: '#EEF4F0',
+    borderRadius: THEME.radius.md,
+  },
+  sourceNoteText: { flex: 1, color: THEME.colors.textMuted, fontSize: 13, fontWeight: '600' },
   tributeBox: { gap: THEME.spacing.sm, marginTop: THEME.spacing.sm },
   tributeInput: {
     backgroundColor: THEME.colors.card,
